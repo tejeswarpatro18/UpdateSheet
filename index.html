@@ -72,6 +72,8 @@
       background-color: #218838;
     }
   </style>
+  <!-- Load Google Apps Script Client API -->
+  <script src="https://apis.google.com/js/platform.js" async defer></script>
 </head>
 <body>
   <div class="container">
@@ -137,49 +139,52 @@
   </div>
 
   <script>
-    function openTab(evt, tabName) {
-      const tabcontent = document.getElementsByClassName("tabcontent");
-      for (let i = 0; i < tabcontent.length; i++) {
-        tabcontent[i].style.display = "none";
+    // Wait for the DOM and Google Apps Script API to load
+    document.addEventListener("DOMContentLoaded", function () {
+      // Your functions here
+      function openTab(evt, tabName) {
+        const tabcontent = document.getElementsByClassName("tabcontent");
+        for (let i = 0; i < tabcontent.length; i++) {
+          tabcontent[i].style.display = "none";
+        }
+        const tablinks = document.getElementsByClassName("tablinks");
+        for (let i = 0; i < tablinks.length; i++) {
+          tablinks[i].className = tablinks[i].className.replace(" active", "");
+        }
+        document.getElementById(tabName).style.display = "block";
+        evt.currentTarget.className += " active";
       }
-      const tablinks = document.getElementsByClassName("tablinks");
-      for (let i = 0; i < tablinks.length; i++) {
-        tablinks[i].className = tablinks[i].className.replace(" active", "");
+
+      function addEntry() {
+        const name = document.getElementById("name").value;
+        const phone = document.getElementById("phone").value;
+        const item = document.getElementById("item").value;
+        const quantity = document.getElementById("quantity").value;
+        const amount = document.getElementById("amount").value;
+        const date = document.getElementById("date").value;
+
+        google.script.run.addEntry(name, phone, item, quantity, amount, date);
+        alert("Entry added successfully!");
       }
-      document.getElementById(tabName).style.display = "block";
-      evt.currentTarget.className += " active";
-    }
 
-    function addEntry() {
-      const name = document.getElementById("name").value;
-      const phone = document.getElementById("phone").value;
-      const item = document.getElementById("item").value;
-      const quantity = document.getElementById("quantity").value;
-      const amount = document.getElementById("amount").value;
-      const date = document.getElementById("date").value;
-
-      google.script.run.addEntry(name, phone, item, quantity, amount, date);
-      alert("Entry added successfully!");
-    }
-
-    function sendWhatsApp() {
-      google.script.run.getCustomersWithDueAmount((customers) => {
-        customers.forEach(customer => {
-          const message = `Hi ${customer.name}, your due amount is ${customer.dueAmount}. Please clear it at the earliest.`;
-          google.script.run.sendWhatsAppMessage(customer.phone, message);
+      function sendWhatsApp() {
+        google.script.run.getCustomersWithDueAmount((customers) => {
+          customers.forEach(customer => {
+            const message = `Hi ${customer.name}, your due amount is ${customer.dueAmount}. Please clear it at the earliest.`;
+            google.script.run.sendWhatsAppMessage(customer.phone, message);
+          });
+          alert("WhatsApp notifications sent!");
         });
-        alert("WhatsApp notifications sent!");
-      });
-    }
+      }
 
-    function clearDue() {
-      const name = document.getElementById("clearName").value;
-      const amount = document.getElementById("clearAmount").value;
+      function clearDue() {
+        const name = document.getElementById("clearName").value;
+        const amount = document.getElementById("clearAmount").value;
 
-      google.script.run.clearDueAmount(name, amount);
-      alert("Due amount cleared successfully!");
-    }
-    // window.open("https://script.google.com/macros/s/AKfycbzPs0KbbUzpaGY7FyJykflFaDFK7J5KvOgdaPPj6EKipHFA2qXwfxuUPKVPoWcUnxU/exec")
+        google.script.run.clearDueAmount(name, amount);
+        alert("Due amount cleared successfully!");
+      }
+    });
   </script>
 </body>
 </html>
