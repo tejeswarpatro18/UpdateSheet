@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Indian Oil Sales & Due Management</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f8f9fa;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 400px;
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        h2 {
+            background: linear-gradient(90deg, #ff6600, #0033a0);
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 20px;
+        }
+
+        .form-group {
+            text-align: left;
+            margin-bottom: 10px;
+        }
+
+        label {
+            font-weight: bold;
+            color: #0033a0;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 10px;
+            margin-top: 5px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+
+        input:focus, select:focus {
+            outline: 2px solid #ff6600;
+        }
+
+        button {
+            width: 100%;
+            background-color: #ff6600;
+            color: white;
+            padding: 10px;
+            font-size: 18px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        button:hover {
+            background-color: #cc5500;
+        }
+
+        .error {
+            color: red;
+            font-size: 14px;
+            display: none;
+        }
+
+        @media (max-width: 500px) {
+            .container {
+                max-width: 90%;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>Indian Oil Sales Entry</h2>
+        <form id="salesForm">
+            <div class="form-group">
+                <label>Name:</label>
+                <input type="text" id="name" required>
+            </div>
+
+            <div class="form-group">
+                <label>Phone Number:</label>
+                <input type="tel" id="phone" pattern="[0-9]{10}" required placeholder="Enter 10-digit mobile number">
+            </div>
+
+            <div class="form-group">
+                <label>Item:</label>
+                <input type="text" id="item" required>
+            </div>
+
+            <div class="form-group">
+                <label>Quantity:</label>
+                <input type="number" id="quantity" min="1" required>
+            </div>
+
+            <div class="form-group">
+                <label>Amount:</label>
+                <input type="number" id="amount" min="1" required>
+            </div>
+
+            <div class="form-group">
+                <label>Date:</label>
+                <input type="date" id="date" required>
+            </div>
+
+            <button type="button" onclick="submitForm()">Submit</button>
+        </form>
+    </div>
+
+    <div class="container">
+        <h2>Check Due Amount</h2>
+        <div class="form-group">
+            <label>Select Name:</label>
+            <select id="customerDropdown" onchange="fetchDueAmount()">
+                <option value="">Select Name</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>Due Amount:</label>
+            <input type="text" id="dueAmount" readonly>
+        </div>
+
+        <button type="button" onclick="sendWhatsApp()">Send WhatsApp Reminder</button>
+    </div>
+
+    <script>
+        document.getElementById("date").valueAsDate = new Date();
+
+        function submitForm() {
+            let data = {
+                name: document.getElementById("name").value.trim(),
+                phone: document.getElementById("phone").value.trim(),
+                item: document.getElementById("item").value.trim(),
+                quantity: document.getElementById("quantity").value.trim(),
+                amount: document.getElementById("amount").value.trim(),
+                date: document.getElementById("date").value
+            };
+
+            fetch("https://script.google.com/macros/s/AKfycbzPs0KbbUzpaGY7FyJykflFaDFK7J5KvOgdaPPj6EKipHFA2qXwfxuUPKVPoWcUnxU/exec", {
+                method: "POST",
+                mode: "no-cors",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(data),
+            })
+            .then(() => alert("Data submitted successfully!"))
+            .catch(error => alert("Error: " + error));
+        }
+
+        function fetchNamesWithDue() {
+            fetch("https://script.google.com/macros/s/AKfycbzPs0KbbUzpaGY7FyJykflFaDFK7J5KvOgdaPPj6EKipHFA2qXwfxuUPKVPoWcUnxU/exec", {
+                method: "GET",
+                mode: "no-cors"
+            })
+            .then(response => response.json())
+            .then(data => {
+                let dropdown = document.getElementById("customerDropdown");
+                dropdown.innerHTML = '<option value="">Select Name</option>';
+                data.names.forEach(customer => {
+                    if (customer.dueAmount > 0) {
+                        let option = document.createElement("option");
+                        option.value = customer.name;
+                        option.textContent = `${customer.name} (Due: ₹${customer.dueAmount})`;
+                        dropdown.appendChild(option);
+                    }
+                });
+            })
+            .catch(error => console.error("Error fetching due names:", error));
+        }
+
+        function fetchDueAmount() {
+            let selectedName = "test"; //document.getElementById("customerDropdown").value;
+            if (!selectedName) {
+                document.getElementById("dueAmount").value = "";
+                return;
+            }
+
+            fetch(`https://script.google.com/macros/s/AKfycbzPs0KbbUzpaGY7FyJykflFaDFK7J5KvOgdaPPj6EKipHFA2qXwfxuUPKVPoWcUnxU/exec?name=${selectedName}`)
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById("dueAmount").value = data.dueAmount || "0";
+            })
+            .catch(error => console.error("Error fetching due amount:", error));
+        }
+
+        function sendWhatsApp() {
+            let name = document.getElementById("customerDropdown").value;
+            let dueAmount = document.getElementById("dueAmount").value;
+
+            if (!name || !dueAmount) {
+                alert("Select a name to send a WhatsApp message.");
+                return;
+            }
+
+            let phone = "REPLACE_WITH_PHONE_NUMBER"; // Fetch this dynamically
+            let message = `Dear ${name}, your due amount is Rs. ${dueAmount}. Please make the payment soon.`;
+            let whatsappURL = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+            window.open(whatsappURL, "_blank");
+        }
+
+        window.onload = fetchDueAmount;
+    </script>
+
+</body>
+</html>
