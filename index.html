@@ -73,34 +73,15 @@
     }
   </style>
   <!-- Load Google Apps Script Client API -->
-  <script src="https://apis.google.com/js/platform.js" async defer></script>
+  <script src="https://apis.google.com/jsapi"type="text/javascript"></script>
 </head>
 <body>
   <div class="container">
     <h1>Customer Dues Management</h1>
     <div class="tab">
-      <button class="tablinks" onclick="openTab(event, 'EntryDetails')" id="defaultOpen">Entry Details</button>
-      <button class="tablinks" onclick="openTab(event, 'SendWhatsApp')">Send WhatsApp Message</button>
-      <button class="tablinks" onclick="openTab(event, 'ClearDue')">Clear Due</button>
-    </div>
-    <script>
-      function openTab(evt, tabName) {
-        var i, tabcontent, tablinks;
-        tabcontent = document.getElementsByClassName("tabcontent");
-        for (i = 0; i < tabcontent.length; i++) {
-          tabcontent[i].style.display = "none";
-        }
-        tablinks = document.getElementsByClassName("tablinks");
-        for (i = 0; i < tablinks.length; i++) {
-          tablinks[i].className = tablinks[i].className.replace(" active", "");
-        }
-        document.getElementById(tabName).style.display = "block";
-        evt.currentTarget.className += " active";
-      }
-      
-      // Open the default tab on page load
-      document.getElementById("defaultOpen").click();
-    </script>
+      <button class="tablinks" onclick="window.openTab(event, 'EntryDetails')">Entry Details</button>
+      <button class="tablinks" onclick="window.openTab(event, 'SendWhatsApp')">Send WhatsApp Message</button>
+      <button class="tablinks" onclick="window.openTab(event, 'ClearDue')">Clear Due</button>
     </div>
 
     <div id="EntryDetails" class="tabcontent">
@@ -130,7 +111,7 @@
         <input type="date" id="date" required>
       </div>
       <div class="form-group">
-        <button onclick="addEntry()">Add Entry</button>
+        <button onclick="addEntry()" id ="addEntry">Add Entry</button>
       </div>
     </div>
 
@@ -158,35 +139,43 @@
   </div>
 
   <script>
-    // Wait for the DOM and Google Apps Script API to load
-    document.addEventListener("DOMContentLoaded", function () {
-      // Your functions here
-      function openTab(evt, tabName) {
-        const tabcontent = document.getElementsByClassName("tabcontent");
-        for (let i = 0; i < tabcontent.length; i++) {
-          tabcontent[i].style.display = "none";
-        }
-        const tablinks = document.getElementsByClassName("tablinks");
-        for (let i = 0; i < tablinks.length; i++) {
-          tablinks[i].className = tablinks[i].className.replace(" active", "");
-        }
-        document.getElementById(tabName).style.display = "block";
-        evt.currentTarget.className += " active";
+    // Define openTab function in global scope
+    window.openTab = function(evt, tabName) {
+      const tabcontent = document.getElementsByClassName("tabcontent");
+      for (let i = 0; i < tabcontent.length; i++) {
+        tabcontent[i].style.display = "none";
       }
-
-      function addEntry() {
-        const name = document.getElementById("name").value;
-        const phone = document.getElementById("phone").value;
-        const item = document.getElementById("item").value;
-        const quantity = document.getElementById("quantity").value;
-        const amount = document.getElementById("amount").value;
-        const date = document.getElementById("date").value;
-
-        google.script.run.addEntry(name, phone, item, quantity, amount, date);
-        alert("Entry added successfully!");
+      const tablinks = document.getElementsByClassName("tablinks");
+      for (let i = 0; i < tablinks.length; i++) {
+        tablinks[i].className = tablinks[i].className.replace(" active", "");
       }
-
-      function sendWhatsApp() {
+      document.getElementById(tabName).style.display = "block";
+      evt.currentTarget.className += " active";
+    };
+  
+    function onSuccess(response) {
+      console.log("Success response:", response);
+      alert("Operation successful!");
+    }
+  
+    function addEntry() {
+      const name = document.getElementById("name").value;
+      const phone = document.getElementById("phone").value;
+      const item = document.getElementById("item").value;
+      const quantity = document.getElementById("quantity").value;
+      const amount = document.getElementById("amount").value;
+      const date = document.getElementById("date").value;
+  
+      if (typeof google !== "undefined" && google.script && google.script.run) {
+        google.script.run.withSuccessHandler(onSuccess).addEntry(name, phone, item, quantity, amount, date);
+      } else {
+        console.warn("Google Apps Script environment not detected. Running in standalone mode.");
+        alert(`Entry would be added: Name=${name}, Phone=${phone}, Item=${item}, Quantity=${quantity}, Amount=${amount}, Date=${date}`);
+      }
+    }
+  
+    function sendWhatsApp() {
+      if (typeof google !== "undefined" && google.script && google.script.run) {
         google.script.run.getCustomersWithDueAmount((customers) => {
           customers.forEach(customer => {
             const message = `Hi ${customer.name}, your due amount is ${customer.dueAmount}. Please clear it at the earliest.`;
@@ -194,16 +183,28 @@
           });
           alert("WhatsApp notifications sent!");
         });
+      } else {
+        console.warn("Google Apps Script environment not detected.");
+        alert("Simulating WhatsApp message sending.");
       }
-
-      function clearDue() {
-        const name = document.getElementById("clearName").value;
-        const amount = document.getElementById("clearAmount").value;
-
+    }
+  
+    function clearDue() {
+      const name = document.getElementById("clearName").value;
+      const amount = document.getElementById("clearAmount").value;
+  
+      if (typeof google !== "undefined" && google.script && google.script.run) {
         google.script.run.clearDueAmount(name, amount);
-        alert("Due amount cleared successfully!");
+      } else {
+        console.warn("Google Apps Script environment not detected.");
+        alert(`Simulating clearing due for: Name=${name}, Amount=${amount}`);
       }
+    }
+  
+    document.addEventListener("DOMContentLoaded", function () {
+      document.querySelector('.tablinks').click();
     });
   </script>
+  
 </body>
 </html>
