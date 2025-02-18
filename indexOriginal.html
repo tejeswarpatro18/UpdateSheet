@@ -38,6 +38,7 @@
         .form-group {
             text-align: left;
             margin-bottom: 10px;
+            position: relative;
         }
 
         label {
@@ -78,6 +79,29 @@
             color: red;
             font-size: 14px;
             display: none;
+        }
+
+        .suggestions {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #ccc;
+            border-radius: 0 0 5px 5px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+        }
+
+        .suggestion-item {
+            padding: 10px;
+            cursor: pointer;
+        }
+
+        .suggestion-item:hover {
+            background-color: #f0f0f0;
         }
 
         @media (max-width: 500px) {
@@ -129,10 +153,9 @@
     <div class="container">
         <h2>Check Due Amount</h2>
         <div class="form-group">
-            <label>Select Name:</label>
-            <select id="customerDropdown" onchange="fetchDueAmount()">
-                <option value="">Select Name</option>
-            </select>
+            <label>Search Name:</label>
+            <input type="text" id="customerSearch" placeholder="Type to search customer" oninput="searchCustomers(this.value)">
+            <div id="searchSuggestions" class="suggestions"></div>
         </div>
 
         <div class="form-group">
@@ -145,6 +168,7 @@
 
     <script>
         document.getElementById("date").valueAsDate = new Date();
+        let customersData = [];
 
         function submitForm() {
             let data = {
@@ -156,54 +180,80 @@
                 date: document.getElementById("date").value
             };
 
-            fetch("https://script.google.com/macros/s/AKfycbzPs0KbbUzpaGY7FyJykflFaDFK7J5KvOgdaPPj6EKipHFA2qXwfxuUPKVPoWcUnxU/exec", {
+            fetch("https://script.google.com/macros/s/AKfycbxgjyl_S8QCBKpft7chRsnOoaiSznt0I301yNhpBeaS3CYcrsEGlexn_H3UcaWxmZHe/exec", {
                 method: "POST",
                 mode: "no-cors",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(data),
             })
-            .then(() => alert("Data submitted successfully!"))
+            .then(() => {
+                alert("Data submitted successfully!");
+                fetchCustomersData(); // Refresh the customers data after submission
+                // Clear form after successful submission
+                document.getElementById("salesForm").reset();
+                document.getElementById("date").valueAsDate = new Date();
+            })
             .catch(error => alert("Error: " + error));
         }
 
-        function fetchNamesWithDue() {
-            fetch("https://script.google.com/macros/s/AKfycbzPs0KbbUzpaGY7FyJykflFaDFK7J5KvOgdaPPj6EKipHFA2qXwfxuUPKVPoWcUnxU/exec", {
-                method: "GET",
-                mode: "no-cors"
-            })
-            .then(response => response.json())
-            .then(data => {
-                let dropdown = document.getElementById("customerDropdown");
-                dropdown.innerHTML = '<option value="">Select Name</option>';
-                data.names.forEach(customer => {
-                    if (customer.dueAmount > 0) {
-                        let option = document.createElement("option");
-                        option.value = customer.name;
-                        option.textContent = `${customer.name} (Due: ₹${customer.dueAmount})`;
-                        dropdown.appendChild(option);
-                    }
-                });
-            })
-            .catch(error => console.error("Error fetching due names:", error));
+        async function fetchCustomersData() {
+            try {
+                const response = await fetch("https://script.google.com/macros/s/AKfycbxgjyl_S8QCBKpft7chRsnOoaiSznt0I301yNhpBeaS3CYcrsEGlexn_H3UcaWxmZHe/exec");
+                const data = await response.json();
+                customersData = data.names || [];
+                console.log("Fetched customers data:", customersData); // Debug log
+            } catch (error) {
+                console.error("Error fetching names:", error);
+                customersData = [];
+            }
         }
 
-        function fetchDueAmount() {
-            let selectedName = "test"; //document.getElementById("customerDropdown").value;
-            if (!selectedName) {
-                document.getElementById("dueAmount").value = "";
+        function searchCustomers(query) {
+            console.log("Searching for:", query); // Debug log
+            console.log("Available customers:", customersData); // Debug log
+            
+            const suggestionsDiv = document.getElementById("searchSuggestions");
+            suggestionsDiv.innerHTML = '';
+            
+            if (!query) {
+                suggestionsDiv.style.display = 'none';
                 return;
             }
 
-            fetch(`https://script.google.com/macros/s/AKfycbzPs0KbbUzpaGY7FyJykflFaDFK7J5KvOgdaPPj6EKipHFA2qXwfxuUPKVPoWcUnxU/exec?name=${selectedName}`)
-            .then(response => response.json())
-            .then(data => {
-                document.getElementById("dueAmount").value = data.dueAmount || "0";
-            })
-            .catch(error => console.error("Error fetching due amount:", error));
+            if (!Array.isArray(customersData)) {
+                console.error("customersData is not an array:", customersData);
+                return;
+            }
+
+            const matches = customersData.filter(customer => 
+                customer && customer.name && 
+                customer.name.toLowerCase().includes(query.toLowerCase())
+            );
+
+            console.log("Matches found:", matches); // Debug log
+
+            if (matches.length > 0) {
+                suggestionsDiv.style.display = 'block';
+                matches.forEach(customer => {
+                    const div = document.createElement('div');
+                    div.className = 'suggestion-item';
+                    div.textContent = `${customer.name}${customer.dueAmount > 0 ? ` (Due: ₹${customer.dueAmount})` : ''}`;
+                    div.onclick = () => selectCustomer(customer);
+                    suggestionsDiv.appendChild(div);
+                });
+            } else {
+                suggestionsDiv.style.display = 'none';
+            }
+        }
+
+        function selectCustomer(customer) {
+            document.getElementById("customerSearch").value = customer.name;
+            document.getElementById("dueAmount").value = customer.dueAmount || "0";
+            document.getElementById("searchSuggestions").style.display = 'none';
         }
 
         function sendWhatsApp() {
-            let name = document.getElementById("customerDropdown").value;
+            let name = document.getElementById("customerSearch").value;
             let dueAmount = document.getElementById("dueAmount").value;
 
             if (!name || !dueAmount) {
@@ -211,13 +261,28 @@
                 return;
             }
 
-            let phone = "REPLACE_WITH_PHONE_NUMBER"; // Fetch this dynamically
+            // Find the customer's phone number from customersData
+            const customer = customersData.find(c => c.name === name);
+            if (!customer || !customer.phone) {
+                alert("Phone number not found for this customer.");
+                return;
+            }
+
             let message = `Dear ${name}, your due amount is Rs. ${dueAmount}. Please make the payment soon.`;
-            let whatsappURL = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+            let whatsappURL = `https://wa.me/${customer.phone}?text=${encodeURIComponent(message)}`;
             window.open(whatsappURL, "_blank");
         }
 
-        window.onload = fetchDueAmount;
+        // Load customers data when the page loads
+        window.onload = fetchCustomersData;
+
+        // Close suggestions when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('#customerSearch') && !e.target.closest('#searchSuggestions')) {
+                document.getElementById('searchSuggestions').style.display = 'none';
+            }
+        });
+
     </script>
 
 </body>

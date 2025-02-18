@@ -156,45 +156,48 @@
                 date: document.getElementById("date").value
             };
 
-            fetch("https://script.google.com/macros/s/AKfycbzPs0KbbUzpaGY7FyJykflFaDFK7J5KvOgdaPPj6EKipHFA2qXwfxuUPKVPoWcUnxU/exec", {
+            fetch("https://script.google.com/macros/s/AKfycbxgjyl_S8QCBKpft7chRsnOoaiSznt0I301yNhpBeaS3CYcrsEGlexn_H3UcaWxmZHe/exec", {
                 method: "POST",
                 mode: "no-cors",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(data),
             })
-            .then(() => alert("Data submitted successfully!"))
+            .then(() => {
+                alert("Data submitted successfully!");
+                fetchNamesWithDue(); // Refresh the names list after submission
+            })
             .catch(error => alert("Error: " + error));
         }
 
         function fetchNamesWithDue() {
-            fetch("https://script.google.com/macros/s/AKfycbzPs0KbbUzpaGY7FyJykflFaDFK7J5KvOgdaPPj6EKipHFA2qXwfxuUPKVPoWcUnxU/exec", {
-                method: "GET",
-                mode: "no-cors"
-            })
+            fetch("https://script.google.com/macros/s/AKfycbxgjyl_S8QCBKpft7chRsnOoaiSznt0I301yNhpBeaS3CYcrsEGlexn_H3UcaWxmZHe/exec")
             .then(response => response.json())
             .then(data => {
                 let dropdown = document.getElementById("customerDropdown");
                 dropdown.innerHTML = '<option value="">Select Name</option>';
+
+                // Populate dropdown with all customer names
                 data.names.forEach(customer => {
+                    let option = document.createElement("option");
+                    option.value = customer.name;
+                    option.textContent = customer.name;
                     if (customer.dueAmount > 0) {
-                        let option = document.createElement("option");
-                        option.value = customer.name;
-                        option.textContent = `${customer.name} (Due: ₹${customer.dueAmount})`;
-                        dropdown.appendChild(option);
+                        option.textContent += ` (Due: ₹${customer.dueAmount})`;
                     }
+                    dropdown.appendChild(option);
                 });
             })
-            .catch(error => console.error("Error fetching due names:", error));
+            .catch(error => console.error("Error fetching names:", error));
         }
 
         function fetchDueAmount() {
-            let selectedName = "test"; //document.getElementById("customerDropdown").value;
+            let selectedName = document.getElementById("customerDropdown").value;
             if (!selectedName) {
                 document.getElementById("dueAmount").value = "";
                 return;
             }
 
-            fetch(`https://script.google.com/macros/s/AKfycbzPs0KbbUzpaGY7FyJykflFaDFK7J5KvOgdaPPj6EKipHFA2qXwfxuUPKVPoWcUnxU/exec?name=${selectedName}`)
+            fetch(`https://script.google.com/macros/s/AKfycbxgjyl_S8QCBKpft7chRsnOoaiSznt0I301yNhpBeaS3CYcrsEGlexn_H3UcaWxmZHe/exec?name=${selectedName}`)
             .then(response => response.json())
             .then(data => {
                 document.getElementById("dueAmount").value = data.dueAmount || "0";
@@ -211,13 +214,15 @@
                 return;
             }
 
-            let phone = "REPLACE_WITH_PHONE_NUMBER"; // Fetch this dynamically
+            let phone = "REPLACE_WITH_PHONE_NUMBER"; // Fetch this dynamically from the phone field
             let message = `Dear ${name}, your due amount is Rs. ${dueAmount}. Please make the payment soon.`;
             let whatsappURL = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
             window.open(whatsappURL, "_blank");
         }
 
-        window.onload = fetchDueAmount;
+        // Load names when the page loads
+        window.onload = fetchNamesWithDue;
+
     </script>
 
 </body>
