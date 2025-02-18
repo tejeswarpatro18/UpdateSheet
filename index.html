@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Sales Entry Form</title>
+    <script>
+        function submitForm() {
+            let name = document.getElementById("name").value;
+            let item = document.getElementById("item").value;
+            let quantity = document.getElementById("quantity").value;
+            let amount = document.getElementById("amount").value;
+            let date = document.getElementById("date").value;
+
+            let data = { name, item, quantity, amount, date };
+
+            fetch("https://script.google.com/macros/s/AKfycbxgjyl_S8QCBKpft7chRsnOoaiSznt0I301yNhpBeaS3CYcrsEGlexn_H3UcaWxmZHe/exec", {
+                method: "POST",
+                body: JSON.stringify(data),
+                headers: { "Content-Type": "application/json" }
+            })
+            .then(response => response.text())
+            .then(data => alert(data))
+            .catch(error => alert("Error: " + error));
+        }
+    </script>
+</head>
+<body>
+    <h2>Sales Entry Form</h2>
+    <label>Name: <input type="text" id="name"></label><br><br>
+    <label>Item: <input type="text" id="item"></label><br><br>
+    <label>Quantity: <input type="number" id="quantity"></label><br><br>
+    <label>Amount: <input type="number" id="amount"></label><br><br>
+    <label>Date: <input type="date" id="date"></label><br><br>
+    <button onclick="submitForm()">Submit</button>
+</body>
+</html>
